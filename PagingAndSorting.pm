@@ -5,7 +5,7 @@ use POSIX;
 use CGI;
 use List::MoreUtils qw(none firstidx);
 
-our $VERSION = '1.0';
+our $VERSION = '1.0.1';
 
 =head1 NAME
 
@@ -13,35 +13,47 @@ HTML::ReportWriter::PagingAndSorting - Contains logic for paging/sorting functio
 
 =head1 SYNOPSIS
 
+Example script:
+
  #!/usr/bin/perl -w
 
  use strict;
- use lib qw(../../modules);
- use PM::Paging;
+ use HTML::ReportWriter::PagingAndSorting;
  use CGI;
  use Template;
  use DBI;
 
  my $template = Template->new( { INCLUDE_PATH => '/templates' } );
  my $co = new CGI;
- my $paging = PM::Paging->new({
+ my $paging = HTML::ReportWriter::PagingAndSorting->new({
              CGI_OBJECT => $co,
              ASC_IMAGE => 'http://www.example.com/u.gif',
              DESC_IMAGE => 'http://www.example.com/d.gif',
              DEFAULT_SORT => 'date',
              sortable_columns => [
-                     { ... },
-                     { ... },
-                     { ... },
+                 {
+                     get => 'name',
+                     sql => 'people.name',
+                     display => 'Full Name',
+                     sortable => 0,
+                 },
+                 {
+                     get => 'age',
+                     sql => 'people.age',
+                     display => 'Age (in years)',
+                     sortable => 1,
+                 },
              ],
  });
 
  my $dbh = DBI->connect('DBI:mysql:foo', 'bar', 'baz');
 
  my $sql = "SELECT SQL_CALC_FOUND_ROWS id, name, age FROM people";
+
+ my $sort = $paging->get_mysql_sort();
  my $limit = $paging->get_mysql_limit();
 
- my $sth = $dbh->prepare("$sql $limit");
+ my $sth = $dbh->prepare("$sql $sort $limit");
  $sth->execute();
  my ($count) = $dbh->selectrow_array('SELECT FOUND_ROWS() AS num');
 
@@ -51,9 +63,54 @@ HTML::ReportWriter::PagingAndSorting - Contains logic for paging/sorting functio
  {
      push @{$vars{'results'}}, $href;
  }
- $vars{'paging'} = $paging->get_paging_html();
+ $vars{'sorting'} = $paging->get_sortable_table_header();
+ $vars{'paging'} = $paging->get_paging_table();
 
+ print $co->header;
  $template->process('display.html', \%vars);
+
+Example template (display.html in the above example):
+
+ <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+ <html>
+ <head>
+ <title>Simple Report</title>
+ <link rel="STYLESHEET" type="text/css" href="/style.css" xmlns="">
+ </head>
+ <body>
+ [% rowcounter = 1 %]
+ <center>
+ <table border="0" width="800">
+ <tr><td>
+ <table id="idtable" border="0" cellspacing="0" cellpadding="4" width="100%">
+ [% sorting %]
+ [%- FOREACH x = results %]
+     [%- IF rowcounter mod 2 %]
+         [%- rowclass = "table_odd" %]
+     [%- ELSE %]
+         [%- rowclass = "table_even" %]
+     [%- END %]
+ <tr class="[% rowclass %]">
+ <td>[% x.name %]</td><td>[% x.age %]</td>
+ </tr>
+     [%- rowcounter = rowcounter + 1 %]
+ [% END %]
+ </table>
+ </td></tr>
+ <tr><td>
+ <table border="0" width="100%">
+ <tr>
+ <td width="75%"></td><td width="25%">[% paging %]</td>
+ </tr>
+ </table>
+ </td></tr>
+ </table>
+ </center>
+ <br /><br />
+ </body>
+ </html>
+
+The DB is left to the reader's imagination.
 
 =head1 DESCRIPTION
 
@@ -371,14 +428,14 @@ sub get_page_link
     return $url;
 }
 
-=item B<get_paging_html()>
+=item B<get_paging_table()>
 
 Gets the paging array, generates links for each part of that array, and then generates HTML for
 the paging block based on the display settings that were configured during instantiation.
 
 =cut
 
-sub get_paging_html
+sub get_paging_table
 {
     my ($self) = @_;
     die "You cannot draw paging for a page with no results!" if $self->{'NUM_RESULTS'} == 0;
@@ -596,7 +653,7 @@ release, which hopefully will come soon.
 
 =cut
 
-sub get_sortable_html_table_header
+sub get_sortable_table_header
 {
     my ($self) = @_;
     # since this function calls get_sort_link, I'm not going to do the error checks -- let them fall through

@@ -1,5 +1,10 @@
 Revision history for Perl extension HTML::ReportWriter::PagingAndSorting.
 
+1.0.1  Thu Dec 16 12:41:00 2004
+	- Fixed name of sub to match documentation
+	- Changed sub name to be consistent with other subroutines
+	- Updated SYNOPSIS to include a more full-fledged example
+
 1.0  Tue Dec 14 17:28:34 2004
 	- original version
 
