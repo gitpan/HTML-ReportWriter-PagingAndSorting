@@ -1,0 +1,36 @@
+HTML/ReportWriter/PagingAndSorting version 1.0
+===============================================
+
+This module provides a simple OO interface to paging and sorting logic
+necessary to easily implement page-able, sortable reports in HTML.
+
+It expects that the user is using MySQL as a datasource. The example
+included in the synopsis also expects the user to be using the Template
+Toolkit. Both of these expectations however could be done away with,
+although I have at this time no reason to contemplate the exact uses for
+this module without those two "dependencies".
+
+If you're interested in a more complete solution for HTML reporting on
+DB-driven data, check out the parent module, HTML::ReportWriter.
+
+INSTALLATION
+
+To install this module type the following:
+
+   perl Makefile.PL
+   make
+   make test
+   make install
+
+DEPENDENCIES
+
+This module requires these other modules and libraries:
+
+   CGI, List::MoreUtils, POSIX
+
+COPYRIGHT AND LICENSE
+
+This module is released under the same license as Perl itself.
+
+Copyright (C) 2004 Shane Allen <opiate@gmail.com>
+
